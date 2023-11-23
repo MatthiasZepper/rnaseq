@@ -40,15 +40,15 @@ if (!params.skip_alignment) { prepareToolIndices << params.aligner }
 if (!params.skip_pseudo_alignment && params.pseudo_aligner) { prepareToolIndices << params.pseudo_aligner }
 
 // Determine whether to filter the GTF or not
-def filterGtf = 
+def filterGtf =
     ((
         // Condition 1: Alignment is required and aligner is set
         !params.skip_alignment && params.aligner
-    ) || 
+    ) ||
     (
         // Condition 2: Pseudoalignment is required and pseudoaligner is set
         !params.skip_pseudo_alignment && params.pseudo_aligner
-    ) || 
+    ) ||
     (
         // Condition 3: Transcript FASTA file is not provided
         !params.transcript_fasta
@@ -121,6 +121,8 @@ include { ALIGN_STAR                                        } from '../subworkfl
 include { QUANTIFY_RSEM                                     } from '../subworkflows/local/quantify_rsem'
 include { QUANTIFY_PSEUDO_ALIGNMENT as QUANTIFY_STAR_SALMON } from '../subworkflows/local/quantify_pseudo'
 include { QUANTIFY_PSEUDO_ALIGNMENT                         } from '../subworkflows/local/quantify_pseudo'
+include { BAM_DEDUP_SAMTOOLS_UMICOLLAPSE as GENOME_DEDUP    } from '../subworkflows/local/bam_dedup_samtools_umicollapse'
+include { BAM_DEDUP_SAMTOOLS_UMICOLLAPSE as TRANS_DEDUP     } from '../subworkflows/local/bam_dedup_samtools_umicollapse'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -428,19 +430,19 @@ workflow RNASEQ {
         //
         if (params.with_umi) {
             // Deduplicate genome BAM file before downstream analysis
-            BAM_DEDUP_STATS_SAMTOOLS_UMITOOLS_GENOME (
+            GENOME_DEDUP (
                 ch_genome_bam.join(ch_genome_bam_index, by: [0]),
                 params.umitools_dedup_stats
             )
-            ch_genome_bam        = BAM_DEDUP_STATS_SAMTOOLS_UMITOOLS_GENOME.out.bam
-            ch_genome_bam_index  = BAM_DEDUP_STATS_SAMTOOLS_UMITOOLS_GENOME.out.bai
-            ch_samtools_stats    = BAM_DEDUP_STATS_SAMTOOLS_UMITOOLS_GENOME.out.stats
-            ch_samtools_flagstat = BAM_DEDUP_STATS_SAMTOOLS_UMITOOLS_GENOME.out.flagstat
-            ch_samtools_idxstats = BAM_DEDUP_STATS_SAMTOOLS_UMITOOLS_GENOME.out.idxstats
+            ch_genome_bam        = GENOME_DEDUP.out.bam
+            ch_genome_bam_index  = GENOME_DEDUP.out.bai
+            ch_samtools_stats    = GENOME_DEDUP.out.stats
+            ch_samtools_flagstat = GENOME_DEDUP.out.flagstat
+            ch_samtools_idxstats = GENOME_DEDUP.out.idxstats
             if (params.bam_csi_index) {
-                ch_genome_bam_index  = BAM_DEDUP_STATS_SAMTOOLS_UMITOOLS_GENOME.out.csi
+                ch_genome_bam_index  = GENOME_DEDUP.out.csi
             }
-            ch_versions = ch_versions.mix(BAM_DEDUP_STATS_SAMTOOLS_UMITOOLS_GENOME.out.versions)
+            ch_versions = ch_versions.mix(GENOME_DEDUP.out.versions)
 
             // Co-ordinate sort, index and run stats on transcriptome BAM
             BAM_SORT_STATS_SAMTOOLS (
@@ -451,14 +453,14 @@ workflow RNASEQ {
             ch_transcriptome_sorted_bai = BAM_SORT_STATS_SAMTOOLS.out.bai
 
             // Deduplicate transcriptome BAM file before read counting with Salmon
-            BAM_DEDUP_STATS_SAMTOOLS_UMITOOLS_TRANSCRIPTOME (
+            TRANS_DEDUP (
                 ch_transcriptome_sorted_bam.join(ch_transcriptome_sorted_bai, by: [0]),
                 params.umitools_dedup_stats
             )
 
             // Name sort BAM before passing to Salmon
             SAMTOOLS_SORT (
-                BAM_DEDUP_STATS_SAMTOOLS_UMITOOLS_TRANSCRIPTOME.out.bam
+                TRANS_DEDUP.out.bam
             )
 
             // Only run prepare_for_rsem.py on paired-end BAM files
@@ -816,7 +818,7 @@ workflow RNASEQ {
     //
     ch_pseudo_multiqc                   = Channel.empty()
     ch_pseudoaligner_pca_multiqc        = Channel.empty()
-    ch_pseudoaligner_clustering_multiqc = Channel.empty()    
+    ch_pseudoaligner_clustering_multiqc = Channel.empty()
     if (!params.skip_pseudo_alignment && params.pseudo_aligner) {
 
        if (params.pseudo_aligner == 'salmon') {
@@ -851,7 +853,7 @@ workflow RNASEQ {
             ch_versions = ch_versions.mix(DESEQ2_QC_PSEUDO.out.versions)
         }
     }
-    
+
     //
     // MODULE: Pipeline reporting
     //
@@ -922,7 +924,7 @@ workflow.onComplete {
     if (params.email || params.email_on_fail) {
         NfcoreTemplate.email(workflow, params, summary_params, projectDir, log, multiqc_report, pass_mapped_reads, pass_trimmed_reads, pass_strand_check)
     }
-    
+
     NfcoreTemplate.dump_parameters(workflow, params)
     NfcoreTemplate.summary(workflow, params, log, pass_mapped_reads, pass_trimmed_reads, pass_strand_check)
 
