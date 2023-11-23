@@ -6,14 +6,14 @@
 // MODULES
 //
 
-include { UMICOLLAPSE    } from '../../modules/nf-core/umicollapse/main'
-include { SAMTOOLS_INDEX } from '../../modules/nf-core/samtools/index/main'
+include { UMICOLLAPSE    } from '../../../modules/nf-core/umicollapse/main'
+include { SAMTOOLS_INDEX } from '../../../modules/nf-core/samtools/index/main'
 
 //
 // SUBWORKFLOWS
 //
 
-include { BAM_STATS_SAMTOOLS } from '../../subworkflows/nf-core/bam_stats_samtools/main'
+include { BAM_STATS_SAMTOOLS } from '../../../subworkflows/nf-core/bam_stats_samtools/main'
 
 workflow BAM_DEDUP_SAMTOOLS_UMICOLLAPSE {
     take:
