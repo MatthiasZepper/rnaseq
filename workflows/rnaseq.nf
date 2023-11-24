@@ -452,15 +452,33 @@ workflow RNASEQ {
             ch_transcriptome_sorted_bam = BAM_SORT_STATS_SAMTOOLS.out.bam
             ch_transcriptome_sorted_bai = BAM_SORT_STATS_SAMTOOLS.out.bai
 
+            // Tap the input channel to run both tools simultaneously
+            ch_transcriptome_sorted_bam
+                .join(ch_transcriptome_sorted_bai, by: [0])
+                .tap { ch_transcriptome_sorted_bam_umitools_in }
+                .set { ch_transcriptome_sorted_bam_umicollapse_in }
+
             // Deduplicate transcriptome BAM file before read counting with Salmon
             BAM_DEDUP_STATS_SAMTOOLS_UMITOOLS_TRANSCRIPTOME (
-                ch_transcriptome_sorted_bam.join(ch_transcriptome_sorted_bai, by: [0]),
+                ch_transcriptome_sorted_bam_umitools_in.map { meta, bam ->
+                    meta.id = "$meta.id" + "_umitools"
+                    return [ meta + [ deduplication: "umitools" ], bam ]
+                },
+                params.umitools_dedup_stats
+            )
+
+            BAM_DEDUP_STATS_SAMTOOLS_UMICOLLAPSE_TRANSCRIPTOME (
+                ch_transcriptome_sorted_bam_umicollapse_in.map { meta, bam ->
+                    meta.id = "$meta.id" + "_umicollapse"
+                    return [ meta + [ deduplication: "umicollapse" ], bam ]
+                },
                 params.umitools_dedup_stats
             )
 
             // Name sort BAM before passing to Salmon
             SAMTOOLS_SORT (
                 BAM_DEDUP_STATS_SAMTOOLS_UMITOOLS_TRANSCRIPTOME.out.bam
+                .mix(BAM_DEDUP_STATS_SAMTOOLS_UMICOLLAPSE_TRANSCRIPTOME.out.bam)
             )
 
             // Only run prepare_for_rsem.py on paired-end BAM files
