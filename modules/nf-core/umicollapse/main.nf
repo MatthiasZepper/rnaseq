@@ -12,7 +12,7 @@ process UMICOLLAPSE {
 
     output:
     tuple val(meta), path("*.bam"), emit: bam
-    tuple val(meta), path("*.log"), emit: log
+    //tuple val(meta), path("*.log"), emit: log
     path  "versions.yml"          , emit: versions
 
     when:
@@ -30,7 +30,7 @@ process UMICOLLAPSE {
         -o ${prefix}.bam \\
         $args
 
-    mv .command.log ${prefix}_UMICollapse.log
+    ##mv .command.log ${prefix}_UMICollapse.log
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

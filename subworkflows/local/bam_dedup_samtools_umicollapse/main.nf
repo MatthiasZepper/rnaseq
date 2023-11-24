@@ -69,6 +69,6 @@ workflow BAM_DEDUP_SAMTOOLS_UMICOLLAPSE {
     stats    = BAM_STATS_SAMTOOLS.out.stats    // channel: [ val(meta), [ stats ] ]
     flagstat = BAM_STATS_SAMTOOLS.out.flagstat // channel: [ val(meta), [ flagstat ] ]
     idxstats = BAM_STATS_SAMTOOLS.out.idxstats // channel: [ val(meta), [ idxstats ] ]
-    umi_log  = UMICOLLAPSE.out.log             // channel: [ val(meta), [ log ] ]
+    //umi_log  = UMICOLLAPSE.out.log             // channel: [ val(meta), [ log ] ]
     versions = ch_versions                     // channel: [ versions.yml ]
 }
