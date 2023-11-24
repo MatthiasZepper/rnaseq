@@ -121,7 +121,6 @@ include { ALIGN_STAR                                        } from '../subworkfl
 include { QUANTIFY_RSEM                                     } from '../subworkflows/local/quantify_rsem'
 include { QUANTIFY_PSEUDO_ALIGNMENT as QUANTIFY_STAR_SALMON } from '../subworkflows/local/quantify_pseudo'
 include { QUANTIFY_PSEUDO_ALIGNMENT                         } from '../subworkflows/local/quantify_pseudo'
-include { BAM_DEDUP_SAMTOOLS_UMICOLLAPSE as BAM_DEDUP_STATS_SAMTOOLS_UMICOLLAPSE_GENOME    } from '../subworkflows/local/bam_dedup_samtools_umicollapse'
 include { BAM_DEDUP_SAMTOOLS_UMICOLLAPSE as BAM_DEDUP_STATS_SAMTOOLS_UMICOLLAPSE_TRANSCRIPTOME } from '../subworkflows/local/bam_dedup_samtools_umicollapse'
 
 /*
