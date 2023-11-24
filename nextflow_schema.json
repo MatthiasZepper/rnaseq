@@ -298,11 +298,6 @@
                     "fa_icon": "fas fa-barcode",
                     "description": "Enable UMI-based read deduplication."
                 },
-                "dedup": {
-                    "type": "string",
-                    "fa_icon": "fas fa-barcode",
-                    "description": "Enables the user to select which tool to use for dedup: umitools or umicollapse"
-                },
                 "umitools_extract_method": {
                     "type": "string",
                     "default": "string",
