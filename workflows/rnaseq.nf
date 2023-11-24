@@ -460,9 +460,9 @@ workflow RNASEQ {
 
             // Deduplicate transcriptome BAM file before read counting with Salmon
             BAM_DEDUP_STATS_SAMTOOLS_UMITOOLS_TRANSCRIPTOME (
-                ch_transcriptome_sorted_bam_umitools_in.map { meta, bam ->
+                ch_transcriptome_sorted_bam_umitools_in.map { meta, bam, bai ->
                     meta.id = "$meta.id" + "_umitools"
-                    return [ meta + [ deduplication: "umitools" ], bam ]
+                    return [ meta + [ deduplication: "umitools" ], bam, bai ]
                 },
                 params.umitools_dedup_stats
             )
@@ -470,7 +470,7 @@ workflow RNASEQ {
             BAM_DEDUP_STATS_SAMTOOLS_UMICOLLAPSE_TRANSCRIPTOME (
                 ch_transcriptome_sorted_bam_umicollapse_in.map { meta, bam ->
                     meta.id = "$meta.id" + "_umicollapse"
-                    return [ meta + [ deduplication: "umicollapse" ], bam ]
+                    return [ meta + [ deduplication: "umicollapse" ], bam, bai ]
                 },
                 params.umitools_dedup_stats
             )
@@ -494,16 +494,26 @@ workflow RNASEQ {
                 }
                 .set { ch_umitools_dedup_bam }
 
+            // Run prepare_for_rsem.py on paired-end BAM files, but also skip for testing purposes of umicollapse
+            ch_umitools_dedup_bam.paired_end
+                .tap { ch_umitools_dedup_bam.paired_end_prep }
+                .map { meta, bam ->
+                    meta.id = "$meta.id" + "_noprep"
+                    return [ meta , bam ]
+                }
+                .set{ch_umitools_dedup_bam.paired_end_noprep}
+
             // Fix paired-end reads in name sorted BAM file
             // See: https://github.com/nf-core/rnaseq/issues/828
             UMITOOLS_PREPAREFORSALMON (
-                ch_umitools_dedup_bam.paired_end
+                ch_umitools_dedup_bam.paired_end_prep
             )
             ch_versions = ch_versions.mix(UMITOOLS_PREPAREFORSALMON.out.versions.first())
 
             ch_umitools_dedup_bam
                 .single_end
                 .mix(UMITOOLS_PREPAREFORSALMON.out.bam)
+                .mix(ch_umitools_dedup_bam.paired_end_noprep) // reinject the bams for which UMITOOLS_PREPAREFORSALMON was bypassed.
                 .set { ch_transcriptome_bam }
         }
 
