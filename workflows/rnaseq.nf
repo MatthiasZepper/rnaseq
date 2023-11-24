@@ -121,8 +121,8 @@ include { ALIGN_STAR                                        } from '../subworkfl
 include { QUANTIFY_RSEM                                     } from '../subworkflows/local/quantify_rsem'
 include { QUANTIFY_PSEUDO_ALIGNMENT as QUANTIFY_STAR_SALMON } from '../subworkflows/local/quantify_pseudo'
 include { QUANTIFY_PSEUDO_ALIGNMENT                         } from '../subworkflows/local/quantify_pseudo'
-include { BAM_DEDUP_SAMTOOLS_UMICOLLAPSE as GENOME_DEDUP    } from '../subworkflows/local/bam_dedup_samtools_umicollapse'
-include { BAM_DEDUP_SAMTOOLS_UMICOLLAPSE as TRANS_DEDUP     } from '../subworkflows/local/bam_dedup_samtools_umicollapse'
+include { BAM_DEDUP_SAMTOOLS_UMICOLLAPSE as BAM_DEDUP_STATS_SAMTOOLS_UMICOLLAPSE_GENOME    } from '../subworkflows/local/bam_dedup_samtools_umicollapse'
+include { BAM_DEDUP_SAMTOOLS_UMICOLLAPSE as BAM_DEDUP_STATS_SAMTOOLS_UMICOLLAPSE_TRANSCRIPTOME } from '../subworkflows/local/bam_dedup_samtools_umicollapse'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -428,7 +428,7 @@ workflow RNASEQ {
         //
         // SUBWORKFLOW: Remove duplicate reads from BAM file based on UMIs
         //
-        if (params.with_umi && params.dedup == 'umitools') {
+        if (params.with_umi) {
             // Deduplicate genome BAM file before downstream analysis
             BAM_DEDUP_STATS_SAMTOOLS_UMITOOLS_GENOME (
                 ch_genome_bam.join(ch_genome_bam_index, by: [0]),
@@ -461,67 +461,6 @@ workflow RNASEQ {
             // Name sort BAM before passing to Salmon
             SAMTOOLS_SORT (
                 BAM_DEDUP_STATS_SAMTOOLS_UMITOOLS_TRANSCRIPTOME.out.bam
-            )
-
-            // Only run prepare_for_rsem.py on paired-end BAM files
-            SAMTOOLS_SORT
-                .out
-                .bam
-                .branch {
-                    meta, bam ->
-                        single_end: meta.single_end
-                            return [ meta, bam ]
-                        paired_end: !meta.single_end
-                            return [ meta, bam ]
-                }
-                .set { ch_umitools_dedup_bam }
-
-            // Fix paired-end reads in name sorted BAM file
-            // See: https://github.com/nf-core/rnaseq/issues/828
-            UMITOOLS_PREPAREFORSALMON (
-                ch_umitools_dedup_bam.paired_end
-            )
-            ch_versions = ch_versions.mix(UMITOOLS_PREPAREFORSALMON.out.versions.first())
-
-            ch_umitools_dedup_bam
-                .single_end
-                .mix(UMITOOLS_PREPAREFORSALMON.out.bam)
-                .set { ch_transcriptome_bam }
-        }
-
-        if (params.with_umi && params.dedup == 'umicollapse') {
-            // Deduplicate genome BAM file before downstream analysis
-            GENOME_DEDUP (
-                ch_genome_bam.join(ch_genome_bam_index, by: [0]),
-                params.umitools_dedup_stats
-            )
-            ch_genome_bam        = GENOME_DEDUP.out.bam
-            ch_genome_bam_index  = GENOME_DEDUP.out.bai
-            ch_samtools_stats    = GENOME_DEDUP.out.stats
-            ch_samtools_flagstat = GENOME_DEDUP.out.flagstat
-            ch_samtools_idxstats = GENOME_DEDUP.out.idxstats
-            if (params.bam_csi_index) {
-                ch_genome_bam_index  = GENOME_DEDUP.out.csi
-            }
-            ch_versions = ch_versions.mix(GENOME_DEDUP.out.versions)
-
-            // Co-ordinate sort, index and run stats on transcriptome BAM
-            BAM_SORT_STATS_SAMTOOLS (
-                ch_transcriptome_bam,
-                PREPARE_GENOME.out.fasta.map { [ [:], it ] }
-            )
-            ch_transcriptome_sorted_bam = BAM_SORT_STATS_SAMTOOLS.out.bam
-            ch_transcriptome_sorted_bai = BAM_SORT_STATS_SAMTOOLS.out.bai
-
-            // Deduplicate transcriptome BAM file before read counting with Salmon
-            TRANS_DEDUP (
-                ch_transcriptome_sorted_bam.join(ch_transcriptome_sorted_bai, by: [0]),
-                params.umitools_dedup_stats
-            )
-
-            // Name sort BAM before passing to Salmon
-            SAMTOOLS_SORT (
-                TRANS_DEDUP.out.bam
             )
 
             // Only run prepare_for_rsem.py on paired-end BAM files
