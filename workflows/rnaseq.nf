@@ -467,7 +467,7 @@ workflow RNASEQ {
             )
 
             BAM_DEDUP_STATS_SAMTOOLS_UMICOLLAPSE_TRANSCRIPTOME (
-                ch_transcriptome_sorted_bam_umicollapse_in.map { meta, bam ->
+                ch_transcriptome_sorted_bam_umicollapse_in.map { meta, bam, bai ->
                     meta.id = "$meta.id" + "_umicollapse"
                     return [ meta + [ deduplication: "umicollapse" ], bam, bai ]
                 },
