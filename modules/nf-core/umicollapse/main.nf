@@ -24,9 +24,10 @@ process UMICOLLAPSE {
     def VERSION = '1' // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
 
     """
+    # -Xms${String.format("%.0f", Math.rint(0.2 * task.memory.toGiga()))}g  \\
+
     umicollapse \\
         bam \\
-        -Xms${String.format("%.0f", Math.rint(0.2 * task.memory.toGiga()))}g  \\
         -Xmx${task.memory.toGiga()}g  \\
         -i $bam \\
         -o ${prefix}.bam \\
