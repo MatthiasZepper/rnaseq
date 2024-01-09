@@ -24,7 +24,7 @@ process UMICOLLAPSE {
     def VERSION = '1' // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
 
     """
-    # -Xms${String.format("%.0f", Math.rint(0.2 * task.memory.toGiga()))}g  \\
+    ## -Xms${String.format("%.0f", Math.rint(0.2 * task.memory.toGiga()))}g  \\
 
     umicollapse \\
         bam \\
@@ -33,7 +33,7 @@ process UMICOLLAPSE {
         -o ${prefix}.bam \\
         $args
 
-    ##mv .command.log ${prefix}_UMICollapse.log
+    mv .command.log ${prefix}.UMICollapse.log
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
