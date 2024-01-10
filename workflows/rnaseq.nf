@@ -494,7 +494,8 @@ workflow RNASEQ {
                 .set { ch_umitools_dedup_bam }
 
             // Run prepare_for_rsem.py on paired-end BAM files, but also skip for testing purposes of umicollapse
-            ch_umitools_dedup_bam_paired_end
+            ch_umitools_dedup_bam
+                .paired_end
                 .tap { ch_umitools_dedup_bam_paired_end_prep }
                 .map { meta, bam ->
                     meta.id = "$meta.id" + "_noprep"
