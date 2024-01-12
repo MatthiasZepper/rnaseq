@@ -31,9 +31,7 @@ process UMICOLLAPSE {
         -Xmx${task.memory.toGiga()}g  \\
         -i $bam \\
         -o ${prefix}.bam \\
-        $args
-
-    mv .command.log ${prefix}.UMICollapse.log
+        $args | tee ${prefix}.UMICollapse.log
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
